@@ -253,8 +253,9 @@ let and;
 const loader = new GLTFLoader();
 
 
-loader.load('test.glb', (gltf) => {
-    gltf.scene.traverse((child) => {
+loader.load('Cube.glb', (gltf) => {
+    const root = gltf.scene
+    root.traverse((child) => {
         if (child.isMesh) {
             and = child; // This will get your mesh, even if nested
         }
@@ -264,8 +265,8 @@ loader.load('test.glb', (gltf) => {
         console.error("No mesh found in the GLTF model!");
         return;
     }
-
-    scene.add(gltf.scene);
+    console.log(root.children)
+    scene.add(root);
 
 })
 // Function to apply a texture to the wall
