@@ -247,21 +247,23 @@ const environmentMap = cubeTextureLoader.load([
 
 
 scene.environment = environmentMap
-scene.background = environmentMap
+scene.background = environmentMap 
 
-let and;
+let model;
 const loader = new GLTFLoader();
 
 
-loader.load('Cube.glb', (gltf) => {
+loader.load('Chair.glb', (gltf) => {
     const root = gltf.scene
+    root.position.set(0,1,0)
+    
     root.traverse((child) => {
         if (child.isMesh) {
-            and = child; // This will get your mesh, even if nested
+            model = child; // This will get your mesh, even if nested
         }
     });
 
-    if (!and) {
+    if (!model) {
         console.error("No mesh found in the GLTF model!");
         return;
     }
@@ -272,18 +274,19 @@ loader.load('Cube.glb', (gltf) => {
 // Function to apply a texture to the wall
 function applyTextureToWall(texturePath) {
     textureLoader.load(texturePath, (texture) => {
-        and.material.map = texture;
-        and.material.needsUpdate = true; // Important to update the material
+        model.material.map = texture;
+        texture.flipY = false
+        model.material.needsUpdate = true; // Important to update the material
     });
 }
 
 // Event listeners for buttons
 document.getElementById('texture1Btn').addEventListener('click', () => {
-    applyTextureToWall('/environmentMaps/2/px.png');
+    applyTextureToWall('C1.jpg');
 });
 
 document.getElementById('texture2Btn').addEventListener('click', () => {
-    applyTextureToWall('/environmentMaps/2/nx.png');
+    applyTextureToWall('C2.jpg');
 });
 
 camera.position.z = 5;

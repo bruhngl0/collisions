@@ -1,0 +1,19 @@
+
+button {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    border: none;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    margin: 10px;
+}
+
+#texture1Btn{
+    background-color: rgb(221, 240, 222);
+}
+
+#texture2Btn{
+    background-color: rgb(247, 173, 245);
+}
