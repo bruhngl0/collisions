@@ -219,8 +219,10 @@ document.getElementById('showBlue').addEventListener('click', () => {
 
 //GARUDA GAMANA RISHABA VAHANA 
 
+/* working 
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 const cubeTextureLoader = new THREE.CubeTextureLoader
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
 
@@ -249,11 +251,18 @@ const environmentMap = cubeTextureLoader.load([
 scene.environment = environmentMap
 scene.background = environmentMap 
 
+const dLoader = new DRACOLoader()
+dLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/')
+dLoader.setDecoderConfig({type: 'js'})
+
+const gltfLoader = new GLTFLoader()
+gltfLoader.setDRACOLoader(dLoader)
+
 let model;
-const loader = new GLTFLoader();
 
 
-loader.load('Chair.glb', (gltf) => {
+
+gltfLoader.load('Chair.glb', (gltf) => {
     const root = gltf.scene
     root.position.set(0,1,0)
     
@@ -314,4 +323,264 @@ function animate() {
 }
 animate();
 
+*/
+import * as THREE from 'three';
+
+import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+
+const lightIntensity = 50;
+const roomScale = 1;
+
+
+const dLoader = new DRACOLoader()
+dLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/')
+dLoader.setDecoderConfig({type: 'js'})
+
+const gltfLoader = new GLTFLoader()
+gltfLoader.setDRACOLoader(dLoader)
+
+const cubeTextureLoader = new THREE.CubeTextureLoader
+const textureLoader = new THREE.TextureLoader();
+
+const canvas = document.querySelector('#c');
+
+
+//scene initalization...
+const scene = new THREE.Scene();
+
+const environmentMap = cubeTextureLoader.load([
+    '/environmentMaps/2/px.png',
+    '/environmentMaps/2/nx.png',
+    '/environmentMaps/2/py.png',
+    '/environmentMaps/2/ny.png',
+    '/environmentMaps/2/pz.png',
+    '/environmentMaps/2/nz.png',
+])
+
+
+scene.background = environmentMap
+
+const sizes = {
+    width: window.innerWidth,
+    height: window.innerHeight
+}
+
+window.addEventListener('resize', () =>
+{
+    // Update sizes
+    sizes.width = window.innerWidth
+    sizes.height = window.innerHeight
+
+    // Update camera
+    camera.aspect = sizes.width / sizes.height
+    camera.updateProjectionMatrix()
+
+    // Update renderer
+    renderer.setSize(sizes.width, sizes.height)
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+})
+
+const camera = new THREE.PerspectiveCamera (80, window.innerWidth/ window.innerHeight , 0.01, 5000);
+camera.position.set(0,1.2,-6)
+scene.add(camera)
+
+// Cursor Initialzation
+const cursorGeometry = new THREE.RingGeometry(0.005, 0.001, 20);
+const cursorMaterial = new THREE.MeshPhongMaterial({color: 0x000000, side: THREE.DoubleSide});
+const cursor = new THREE.Mesh(cursorGeometry, cursorMaterial);
+
+camera.add(cursor);
+cursor.position.set(0, 0, -0.5);
+
+const light1 = new THREE.AmbientLight( 0x404040, lightIntensity );
+scene.add(light1);
+
+
+//controls
+const controls = new PointerLockControls(camera, canvas);
+scene.add(controls.getObject());
+
+const renderer  = new THREE.WebGLRenderer({canvas, antialias: true});
+renderer.setSize(sizes.width, sizes.height );
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+renderer.outputColorSpace = THREE.SRGBColorSpace
+
+let chair
+//import dracoModel
+
+gltfLoader.load( 'maiafinal1.glb', function ( gltf ) {
+  const root = gltf.scene;
+  scene.add( root );
+  root.position.set(0 , 0 , -13);
+  root.rotation.y = Math.PI / 2;  
+
+
+  chair = gltf.scene.children.find((child) => child.name === 'chair-065_1024_Baked')
+  console.log(chair)
+
+
+  let scale = roomScale;
+  root.scale.set(scale+(scale*0.2), scale, scale+(scale*0.2));
+  
+
+
+  console.log("yy")
+  console.log(root)
+ 
+ console.log(root.children)
+
+}, undefined, function ( error ) {
+
+	console.error( error );    
+
+});
+
+function applyTextureToWall(texturePath) {
+    textureLoader.load(texturePath, (texture) => {
+        console.log("Loaded texture:", texture);
+
+        if (chair && chair.material) {
+            console.log("Chair material before:", chair.material);
+
+            chair.material.map = texture;
+            texture.flipY = false;
+            chair.material.needsUpdate = true; // Important to update the material
+
+            console.log("Chair material after:", chair.material);
+        } else {
+            console.error("Chair or chair material not found.");
+        }
+    });
+}
+
+
+ 
+document.getElementById('texture1Btn').addEventListener('click', () => {
+    applyTextureToWall('C1.jpg');
+});
+
+
+ 
+document.getElementById('texture2Btn').addEventListener('click', () => {
+    applyTextureToWall('C2.jpg');
+});
+// Add an event listener to the button
+
+
+
+let moveForward = false;
+let moveBackward = false;
+let moveLeft = false;
+let moveRight = false;
+
+let prevTime = performance.now();
+const velocity = new THREE.Vector3();
+const direction = new THREE.Vector3();
+
+function animate() {
+    requestAnimationFrame(animate);
+
+    const time = performance.now();
+    let delta = (time - prevTime) / 1000;
+
+    if (delta > 0.02) {
+        delta = 0.02;
+    }
+
+    velocity.x -= velocity.x * 50 * delta;
+    velocity.z -= velocity.z * 50 * delta;
+
+    direction.z = Number(moveForward) - Number(moveBackward);
+    direction.x = Number(moveRight) - Number(moveLeft);
+    direction.normalize();
+
+    if (moveForward) {
+        velocity.z -= direction.z * 150 * delta;
+    }
+    if (moveBackward) {
+        velocity.z -= direction.z * 150 * delta;  // Note: I changed this to += so that it moves backward
+    }
+    if (moveLeft) {
+        velocity.x -= direction.x * 150 * delta;
+    }
+    if (moveRight) {
+        velocity.x -= direction.x * 150 * delta;  // Note: I changed this to += so that it moves right
+    }
+
+    controls.moveRight(-velocity.x * delta);
+    controls.moveForward(-velocity.z * delta);
+
+    prevTime = time;
+    renderer.render(scene, camera);
+}
+
+animate();
+
+
+
+// Control Event Listeners
+const onKeyDown = function ( event ) {
+
+  switch ( event.code ) {
+
+      case 'ArrowUp':
+      case 'KeyW':
+          moveForward = true;
+          break;
+
+      case 'ArrowLeft':
+      case 'KeyA':
+          moveLeft = true;
+          break;
+
+      case 'ArrowDown':
+      case 'KeyS':
+          moveBackward = true;
+          break;
+
+      case 'ArrowRight':
+      case 'KeyD':
+          moveRight = true;
+          break;
+      case 'Space':
+          if(controls.isLocked){
+              controls.unlock();
+          } else {
+              controls.lock();
+          }
+          break;
+      }
+
+
+  };
+
+const onKeyUp = function ( event ) {
+
+  switch ( event.code ) {
+      case 'ArrowUp':
+      case 'KeyW':
+          moveForward = false;
+          break;
+
+      case 'ArrowLeft':
+      case 'KeyA':
+          moveLeft = false;
+          break;
+
+      case 'ArrowDown':
+      case 'KeyS':
+          moveBackward = false;
+          break;
+
+      case 'ArrowRight':
+      case 'KeyD':
+          moveRight = false;
+          break;
+  }
+};
+
+document.addEventListener( 'keydown', onKeyDown );
+document.addEventListener( 'keyup', onKeyUp );
 
